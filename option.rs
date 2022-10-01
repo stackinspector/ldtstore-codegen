@@ -1,3 +1,6 @@
+use std::borrow::Cow;
+
+/// deprecated
 pub /* const */ fn map2<T, U, V, F>(opt: Option<T>, optb: Option<U>, f: F) -> Option<V>
 where
     F: /* ~const */ FnOnce(T, U) -> V,
@@ -33,6 +36,7 @@ where
     b.then(f)
 }
 
+/// deprecated
 pub fn filter_none<T>(opts: Vec<Option<T>>) -> Vec<T> {
     let mut res = Vec::new();
     for opt in opts {
@@ -43,7 +47,8 @@ pub fn filter_none<T>(opts: Vec<Option<T>>) -> Vec<T> {
     res
 }
 
-pub fn filter_none_attr<T>(attrs: Vec<(String, Option<T>)>) -> Vec<(String, T)> {
+/// deprecated
+pub fn filter_none_attr<T, U>(attrs: Vec<(T, Option<U>)>) -> Vec<(T, U)> {
     let mut res = Vec::new();
     for (k, v) in attrs {
         if let Some(v) = v {
@@ -54,7 +59,7 @@ pub fn filter_none_attr<T>(attrs: Vec<(String, Option<T>)>) -> Vec<(String, T)> 
 }
 
 #[inline]
-pub /* const */ fn from_str(s: String) -> Option<String> {
+pub /* const */ fn from_str<'a>(s: Cow<'a, str>) -> Option<Cow<'a, str>> {
     (s.len() == 0).then_some(s)
 }
 
@@ -66,7 +71,7 @@ pub const fn from_bool(b: bool) -> Option<bool> {
 }
 
 #[inline]
-pub /* const */ fn into_str(opt: Option<String>) -> String {
+pub /* const */ fn into_str<'a>(opt: Option<Cow<'a, str>>) -> Cow<'a, str> {
     opt.unwrap_or_default()
 }
 

@@ -1,17 +1,21 @@
-use std::fs;
-use serde::de::DeserializeOwned;
-use ldtstore_codegen::config::*;
-
-fn load_base<T: DeserializeOwned>(path: &str) -> T {
-    serde_yaml::from_reader(fs::File::open(path).unwrap()).unwrap()
-}
+use std::io::Write;
+use ldtstore_codegen::codegen::{codegen, CodegenResult};
 
 fn main() {
-    println!("{:?}", load_base::<Vec<Side>>(r"D:\root\repo\public\ldtstore-homepage\public.sides.yml"));
-    println!("{:?}", load_base::<TileColumns>(r"D:\root\repo\public\ldtstore-homepage\index.major.yml"));
-    println!("{:?}", load_base::<Vec<Side>>(r"D:\root\repo\public\ldtstore-homepage\index.sides.yml"));
-    println!("{:?}", load_base::<TileGrids>(r"D:\root\repo\public\ldtstore-homepage\ldtools\index.major.yml"));
-    println!("{:?}", load_base::<Vec<Side>>(r"D:\root\repo\public\ldtstore-homepage\ldtools\index.sides.yml"));
-    println!("{:?}", load_base::<Vec<ToolGroup>>(r"D:\root\repo\public\ldtstore-homepage\ldtools\index.tools.yml"));
-    println!("{:?}", load_base::<Category>(r"D:\root\repo\public\ldtstore-homepage\ldtools\index.category.yml"));
+    let CodegenResult { home, tools, tools_plain } = codegen(r"D:\root\repo\public\ldtstore-homepage");
+    let mut f = std::fs::File::create(r"C:\swap\codegen-test").unwrap();
+
+    macro_rules! out {
+        ($s:expr) => {
+            writeln!(f, stringify!($s)).unwrap();
+            for (k, v) in $s {
+                writeln!(f, "{}", k).unwrap();
+                writeln!(f, "{}", v).unwrap();
+            }
+        };
+    }
+    
+    out!(home);
+    out!(tools);
+    out!(tools_plain);
 }

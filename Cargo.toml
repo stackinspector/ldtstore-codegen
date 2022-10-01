@@ -15,10 +15,9 @@ path = "main.rs"
 concat-string = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_repr = "0.1"
-serde-enum-str = "0.2"
+serde_json = "1.0"
+serde_yaml = "0.9"
 indexmap = { version = "1.9", features = ["serde"] }
 lighthtml = { path = "../../Berylsoft/lighthtml" }
 
 [dev-dependencies]
-serde_json = "1.0"
-serde_yaml = "0.9"
