@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use concat_string::concat_string as cs;
 use indexmap::IndexMap;
 use lighthtml::{*, prelude::*};
-use crate::{option::*, config::*, data::*, Map};
+use crate::{config::*, data::*, Map};
 
 macro_rules! assert_none {
     ($x:expr) => {
@@ -68,7 +68,7 @@ fn tile_inner(Tile { tile, font, action, icon_type, name, title, icon }: Tile, i
 
     let class_name: Cow<str> = if is_category { s!("category-item") } else { s!("tile ", tile.as_ref().unwrap()) };
 
-    let icon_type = into_str(icon_type.as_ref().map(|s| s!("-", s)));
+    let icon_type = icon_type.as_ref().map(|s| s!("-", s)).unwrap_or_default();
 
     let mut inner_attr = vec![
         (src, s!("{{IMAGE}}/icon", icon_type, "/", icon.as_ref().unwrap_or_else(|| &name), ".webp")),
@@ -219,7 +219,7 @@ fn side(Side { name, title, text, text_small, tiles, templated }: Side) -> Node 
     };
 
     if let Some(text) = text {
-        content.push(Element(div, class!(if into_bool(text_small) { "text small" } else { "text" }), vec![Text(text)]));
+        content.push(Element(div, class!(if text_small.unwrap_or(false) { "text small" } else { "text" }), vec![Text(text)]));
     }
     
     Element(template, id!("side-", name), vec![
@@ -264,7 +264,7 @@ fn category(Category { tool, link }: Category) -> Vec<Node> {
     vec![
         Element(div, class!("category-title"), vec![
             Element(div, vec![(id, s!("tool-button")), (class, s!("selected"))], vec![Text(tool_title)]),
-            Element(div, id!("tool-button"), vec![Text(link_title)]),
+            Element(div, id!("link-button"), vec![Text(link_title)]),
         ]),
         Element(div, class!("category-content"), vec![
             Element(div, id!("tool-list"), category_tab(tool)),
@@ -319,7 +319,7 @@ fn tool_groups<'a>(groups: Vec<ToolGroup<'a>>, major_category: Category<'a>) -> 
         let mut list = Vec::new();
         for tool in &group.list {
             list.push(tool.name.clone());
-            assert_none!(all.insert(s!(tool.title, into_str(tool.keywords.clone())), tool.name.clone()));
+            assert_none!(all.insert(s!(tool.title, tool.keywords.clone().unwrap_or_default()), tool.name.clone()));
             assert_none!(tools.insert(tool.name.clone(), tool.clone()));
             if let Some(cross_notice) = &tool.cross_notice {
                 for (notice_group, notice) in cross_notice {
@@ -335,7 +335,7 @@ fn tool_groups<'a>(groups: Vec<ToolGroup<'a>>, major_category: Category<'a>) -> 
                 }
             }
         }
-        if into_bool(group.name.as_ref().map(|s| s != "non-index")) {
+        if group.name.as_ref().map(|s| s != "non-index").unwrap_or(true) {
             assert_none!(index.insert(
                 group_name,
                 ToolIndexItem {
@@ -444,7 +444,7 @@ fn tool_links<'a>(name: Cow<'a, str>, ToolLinks { website, websites, downloads: 
         }
     }
 
-    let attrs = (!plain && into_bool(columns)).then(|| (class, s!("tool-links-columns"))).into_iter().collect::<Vec<_>>();
+    let attrs = (!plain && columns.unwrap_or(false)).then(|| (class, s!("tool-links-columns"))).into_iter().collect::<Vec<_>>();
     let map_fn = if plain { tool_link_plain } else { tool_link };
     let mut res = Vec::new();
     if links.len() != 0 {
@@ -457,7 +457,7 @@ fn tool_links<'a>(name: Cow<'a, str>, ToolLinks { website, websites, downloads: 
 }
 
 fn tool_notice(notice: Cow<str>) -> Node {
-    Element(div, vec![], vec![
+    Element(p, vec![], vec![
         Element(b, vec![], vec![Text(s!("注意事项"))]),
         empty!(br),
         Text(notice),
@@ -490,10 +490,11 @@ fn tool(Tool { name, title, icon, description, notice, links, .. }: Tool) -> Nod
     ])
 }
 
-fn tool_plain(Tool { name, description, notice, links, .. }: Tool, cross: bool, has_title: bool) -> Vec<Node> {
+fn tool_plain(Tool { name, title, description, notice, links, .. }: Tool, cross: bool, has_title: bool) -> Vec<Node> {
     let mut res = Vec::new();
     if has_title {
         res.push(Element(h3, id!(name.clone()), vec![
+            Text(s!(title, " ")),
             Element(i, vec![], vec![Text(s!(name.clone(), if cross { " [cross]" } else { "" }))]),
         ]));
     }
