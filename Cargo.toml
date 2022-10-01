@@ -2,6 +2,9 @@
 name = "ldtstore-codegen"
 version = "0.1.0"
 edition = "2021"
+authors = ["stackinspector"]
+license = "MPL-2.0"
+repository = "https://github.com/stackinspector/ldtstore-codegen"
 
 [lib]
 name = "ldtstore_codegen"
