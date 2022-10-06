@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use concat_string::concat_string as cs;
 use indexmap::IndexMap;
 use lighthtml::{*, prelude::*};
@@ -12,11 +11,11 @@ macro_rules! assert_none {
 
 macro_rules! s {
     ($s:expr) => {{
-        let t: Cow<str> = $s.into();
+        let t: ByteString = $s.into();
         t
     }};
     ($($s:expr),+) => {
-        Cow::Owned(cs!($($s),+))
+        s!(cs!($($s),+))
     }
 }
 
@@ -66,7 +65,7 @@ macro_rules! svg_icon {
 fn tile_inner(Tile { tile, font, action, icon_type, name, title, icon }: Tile, is_category: bool) -> Node {
     // TODO lazy eval these `let`s
 
-    let class_name: Cow<str> = if is_category { s!("category-item") } else { s!("tile ", tile.as_ref().unwrap()) };
+    let class_name = if is_category { s!("category-item") } else { s!("tile ", tile.as_ref().unwrap()) };
 
     let icon_type = icon_type.as_ref().map(|s| s!("-", s)).unwrap_or_default();
 
@@ -187,7 +186,7 @@ fn major_wrapper(mut inner: Vec<Node>, page_type: PageType) -> Node {
     ])
 }
 
-fn major_fragment<'a>(mut inner: Vec<Node<'a>>, template_id: Cow<'a, str>) -> Node<'a> {
+fn major_fragment(mut inner: Vec<Node>, template_id: ByteString) -> Node {
     inner.push(clearfix!());
     Element(template, id!("major-", template_id), inner)
 }
@@ -273,12 +272,12 @@ fn category(Category { tool, link }: Category) -> Vec<Node> {
     ]
 }
 
-fn tool_groups<'a>(groups: Vec<ToolGroup<'a>>, major_category: Category<'a>) -> (Map<'a, Tool<'a>>, ToolData<'a>) {
+fn tool_groups(groups: Vec<ToolGroup>, major_category: Category) -> (Map<Tool>, ToolData) {
     let mut tools = Map::new();
     let mut index = Map::new();
     let mut all = Map::new();
     let mut cross = Map::new();
-    let mut cross_notice_title: Map<Cow<str>> = Map::new();
+    let mut cross_notice_title: Map<ByteString> = Map::new();
     let mut category = Map::new();
 
     for tab in {
@@ -360,7 +359,7 @@ fn tool_groups<'a>(groups: Vec<ToolGroup<'a>>, major_category: Category<'a>) -> 
     (tools, ToolData { index, all, cross, category })
 }
 
-fn tool_link_title(title: ToolLinkTitle) -> Cow<str> {
+fn tool_link_title(title: ToolLinkTitle) -> ByteString {
     match title {
         ToolLinkTitle::Text(title) => title,
         ToolLinkTitle::Type(t) => s!(tool_website_type(t)),
@@ -394,7 +393,7 @@ fn tool_link_plain(ToolLink { title, link_type, link, icon }: ToolLink) -> Node 
     ])
 }
 
-fn tool_links<'a>(name: Cow<'a, str>, ToolLinks { website, websites, downloads: tool_downloads, mirror, mirrors, columns }: ToolLinks<'a>, plain: bool) -> Vec<Node<'a>> {
+fn tool_links(name: ByteString, ToolLinks { website, websites, downloads: tool_downloads, mirror, mirrors, columns }: ToolLinks, plain: bool) -> Vec<Node> {
     let mut links = Vec::new();
     let mut downloads = Vec::new();
     if let Some(website) = website {
@@ -456,7 +455,7 @@ fn tool_links<'a>(name: Cow<'a, str>, ToolLinks { website, websites, downloads: 
     res
 }
 
-fn tool_notice(notice: Cow<str>) -> Node {
+fn tool_notice(notice: ByteString) -> Node {
     Element(p, vec![], vec![
         Element(b, vec![], vec![Text(s!("注意事项"))]),
         empty!(br),
@@ -506,7 +505,7 @@ fn tool_plain(Tool { name, title, description, notice, links, .. }: Tool, cross:
     res
 }
 
-fn tools_plain<'a>(tools: Map<'a, Tool<'a>>, index: ToolIndex<'a>, cross: ToolCross<'a>) -> Vec<Node<'a>> {
+fn tools_plain(tools: Map<Tool>, index: ToolIndex, cross: ToolCross) -> Vec<Node> {
     let mut res = Vec::new();
     for (name, ToolIndexItem { title, list, cross_list }) in index {
         res.push(Element(h2, id!(name.clone()), vec![

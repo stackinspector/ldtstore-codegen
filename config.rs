@@ -1,8 +1,6 @@
-use std::borrow::Cow;
 use serde::Deserialize;
 use serde_repr::Deserialize_repr;
-
-use crate::Map;
+use crate::{ByteString, Map};
 
 #[derive(Clone, Copy, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -20,48 +18,48 @@ pub enum InputType {
     Category,
 }
 
-pub type TileColumns<'a> = Vec<Vec<Tile<'a>>>;
+pub type TileColumns = Vec<Vec<Tile>>;
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct TileGrids<'a> {
-    pub left: Vec<Tile<'a>>,
-    pub middle: Vec<TileGridMiddle<'a>>,
+pub struct TileGrids {
+    pub left: Vec<Tile>,
+    pub middle: Vec<TileGridMiddle>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct TileGridMiddle<'a> {
-    pub title: Cow<'a, str>,
-    pub content: Vec<Tile<'a>>,
+pub struct TileGridMiddle {
+    pub title: ByteString,
+    pub content: Vec<Tile>,
 }
 
 // TODO Vec<CategoryTab>
 #[derive(Clone, Debug, Deserialize)]
-pub struct Category<'a> {
-    pub tool: CategoryTab<'a>,
-    pub link: CategoryTab<'a>,
+pub struct Category {
+    pub tool: CategoryTab,
+    pub link: CategoryTab,
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct CategoryTab<'a> {
-    pub title: Cow<'a, str>,
-    pub content: Vec<CategoryGroup<'a>>,
+pub struct CategoryTab {
+    pub title: ByteString,
+    pub content: Vec<CategoryGroup>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct CategoryGroup<'a> {
-    pub title: Cow<'a, str>,
-    pub content: Vec<Tile<'a>>,
+pub struct CategoryGroup {
+    pub title: ByteString,
+    pub content: Vec<Tile>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct Tile<'a> {
-    pub tile: Option<Cow<'a, str>>, // prev no option
+pub struct Tile {
+    pub tile: Option<ByteString>, // prev no option
     pub font: Option<TileFont>,
     pub action: TileAction,
-    pub icon_type: Option<Cow<'a, str>>,
-    pub name: Cow<'a, str>,
-    pub title: Option<Cow<'a, str>>,
-    pub icon: Option<Cow<'a, str>>,
+    pub icon_type: Option<ByteString>,
+    pub name: ByteString,
+    pub title: Option<ByteString>,
+    pub icon: Option<ByteString>,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]
@@ -103,42 +101,42 @@ pub enum TileAction {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct TileTemplate<'a> {
-    pub template: TileTemplateInner<'a>,
-    pub tiles: TileTemplateTiles<'a>,
+pub struct TileTemplate {
+    pub template: TileTemplateInner,
+    pub tiles: TileTemplateTiles,
 }
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(untagged)]
-pub enum TileTemplateTiles<'a> {
-    WithoutTitle(Vec<Cow<'a, str>>),
-    WithTitle(Map<'a, Cow<'a, str>>),
+pub enum TileTemplateTiles {
+    WithoutTitle(Vec<ByteString>),
+    WithTitle(Map<ByteString>),
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct TileTemplateInner<'a> {
-    pub tile: Cow<'a, str>,
+pub struct TileTemplateInner {
+    pub tile: ByteString,
     pub font: Option<TileFont>,
     pub action: TileAction,
-    pub icon_type: Option<Cow<'a, str>>,
+    pub icon_type: Option<ByteString>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct Side<'a> {
-    pub name: Cow<'a, str>,
-    pub title: Cow<'a, str>,
-    pub text: Option<Cow<'a, str>>,
+pub struct Side {
+    pub name: ByteString,
+    pub title: ByteString,
+    pub text: Option<ByteString>,
     pub text_small: Option<bool>,
-    pub tiles: Option<Vec<Tile<'a>>>,
-    pub templated: Option<TileTemplate<'a>>,
+    pub tiles: Option<Vec<Tile>>,
+    pub templated: Option<TileTemplate>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct ToolGroup<'a> {
-    pub name: Option<Cow<'a, str>>,
-    pub title: Option<Cow<'a, str>>,
-    pub cross_notice: Option<Cow<'a, str>>,
-    pub list: Vec<Tool<'a>>,
+pub struct ToolGroup {
+    pub name: Option<ByteString>,
+    pub title: Option<ByteString>,
+    pub cross_notice: Option<ByteString>,
+    pub list: Vec<Tool>,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize_repr)]
@@ -206,55 +204,55 @@ impl MirrorType {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct Tool<'a> {
-    pub name: Cow<'a, str>,
-    pub title: Cow<'a, str>,
-    pub icon: Option<Cow<'a, str>>,
-    pub description: Option<Cow<'a, str>>, // prev no option
-    pub notice: Option<Cow<'a, str>>,
-    pub category: Option<Vec<Cow<'a, str>>>,
-    pub cross: Option<Vec<Cow<'a, str>>>,
-    pub keywords: Option<Cow<'a, str>>,
-    pub cross_notice: Option<Map<'a, Cow<'a, str>>>,
+pub struct Tool {
+    pub name: ByteString,
+    pub title: ByteString,
+    pub icon: Option<ByteString>,
+    pub description: Option<ByteString>, // prev no option
+    pub notice: Option<ByteString>,
+    pub category: Option<Vec<ByteString>>,
+    pub cross: Option<Vec<ByteString>>,
+    pub keywords: Option<ByteString>,
+    pub cross_notice: Option<Map<ByteString>>,
     #[serde(flatten)]
-    pub links: ToolLinks<'a>,
+    pub links: ToolLinks,
 }
 
 // #[derive(Clone, Debug, Deserialize)]
-// pub struct ToolInner<'a> {
+// pub struct ToolInner {
 //     #[serde(flatten)]
-//     pub inner: ToolInner<'a>,
+//     pub inner: ToolInner,
 // }
 
 // #[derive(Clone, Debug, Deserialize)]
-// pub struct ToolCross<'a> {
+// pub struct ToolCross {
 //     #[serde(flatten)]
-//     pub cross: ToolCross<'a>,
+//     pub cross: ToolCross,
 // }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct ToolLinks<'a> {
-    pub website: Option<ToolLinkTitle<'a>>,
-    pub websites: Option<Map<'a, ToolLinkTitle<'a>>>,
-    pub downloads: Option<Map<'a, Cow<'a, str>>>,
+pub struct ToolLinks {
+    pub website: Option<ToolLinkTitle>,
+    pub websites: Option<Map<ToolLinkTitle>>,
+    pub downloads: Option<Map<ByteString>>,
     pub mirror: Option<MirrorType>,
-    pub mirrors: Option<Map<'a, Cow<'a, str>>>,
+    pub mirrors: Option<Map<ByteString>>,
     pub columns: Option<bool>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct ToolLink<'a> {
-    pub title: ToolLinkTitle<'a>,
+pub struct ToolLink {
+    pub title: ToolLinkTitle,
     pub link_type: ToolLinkType,
-    pub link: Cow<'a, str>,
+    pub link: ByteString,
     pub icon: ToolLinkIcon,
 }
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(untagged)]
-pub enum ToolLinkTitle<'a> {
+pub enum ToolLinkTitle {
     Type(ToolLinkTitleType),
-    Text(Cow<'a, str>),
+    Text(ByteString),
 }
 
 pub const fn tool_website_type(t: ToolLinkTitleType) -> &'static str {
@@ -270,7 +268,7 @@ pub const fn tool_website_type(t: ToolLinkTitleType) -> &'static str {
 
 // #[derive(Clone, Debug)]
 // pub struct ProcessedToolGroups {
-//     pub tools: Map<'a, Tool>,
+//     pub tools: Map<Tool>,
 //     pub tool_data: ToolData,
 // }
 
