@@ -70,21 +70,19 @@ fn tile_inner(Tile { tile, font, action, icon_type, name, title, icon }: Tile, i
     let icon_type = icon_type.as_ref().map(|s| s!("-", s)).unwrap_or_default();
 
     let mut inner_attr = vec![
-        (src, s!("{{IMAGE}}/icon", icon_type, "/", icon.as_ref().unwrap_or_else(|| &name), ".webp")),
+        (src, s!("{{IMAGE}}/icon", icon_type, "/", icon.as_ref().unwrap_or(&name), ".webp")),
     ];
 
     if let Some(title) = title.clone() {
-        inner_attr.push((alt, title.clone()));
+        inner_attr.push((alt, title));
     }
 
     let inner_content = if is_category {
         title.map(|title| Element(span, vec![], vec![Text(title)]))
+    } else if let (Some(font), Some(title)) = (font, title) {
+        Some(Element(font.into_tag(), vec![], vec![Text(title)]))
     } else {
-        if let (Some(font), Some(title)) = (font, title) {
-            Some(Element(font.into_tag(), vec![], vec![Text(title)]))
-        } else {
-            None
-        }
+        None
     }.into_iter().collect::<Vec<_>>();
 
     let inner = Element(img, inner_attr, inner_content);
@@ -446,11 +444,11 @@ fn tool_links(name: ByteString, ToolLinks { website, websites, downloads: tool_d
     let attrs = (!plain && columns.unwrap_or(false)).then(|| (class, s!("tool-links-columns"))).into_iter().collect::<Vec<_>>();
     let map_fn = if plain { tool_link_plain } else { tool_link };
     let mut res = Vec::new();
-    if links.len() != 0 {
+    if !links.is_empty() {
         res.push(Element(div, attrs.clone(), links.into_iter().map(map_fn).collect::<Vec<_>>()));
     }
-    if downloads.len() != 0 {
-        res.push(Element(div, attrs.clone(), downloads.into_iter().map(map_fn).collect::<Vec<_>>()));
+    if !downloads.is_empty() {
+        res.push(Element(div, attrs, downloads.into_iter().map(map_fn).collect::<Vec<_>>()));
     }
     res
 }
@@ -465,7 +463,7 @@ fn tool_notice(notice: ByteString) -> Node {
 
 fn tool(Tool { name, title, icon, description, notice, links, .. }: Tool) -> Node {
     let mut detail = Vec::new();
-    detail.push(Element(p, vec![], description.map(|s| Text(s)).into_iter().collect::<Vec<_>>()));
+    detail.push(Element(p, vec![], description.map(Text).into_iter().collect::<Vec<_>>()));
     detail.append(&mut tool_links(name.clone(), links, false));
     if let Some(notice) = notice {
         detail.push(tool_notice(notice));
@@ -477,7 +475,7 @@ fn tool(Tool { name, title, icon, description, notice, links, .. }: Tool) -> Nod
             (onclick, s!("detail(this)")),
         ], vec![
             Element(img, vec![
-                (src, s!("{{IMAGE}}/icon-tool/", icon.clone().unwrap_or_else(|| name.clone()), ".webp")),
+                (src, s!("{{IMAGE}}/icon-tool/", icon.as_ref().unwrap_or(&name), ".webp")),
                 (alt, title.clone()),
             ], vec![]),
             Element(div, class!("item-title"), vec![Text(title)]),
@@ -494,11 +492,11 @@ fn tool_plain(Tool { name, title, description, notice, links, .. }: Tool, cross:
     if has_title {
         res.push(Element(h3, id!(name.clone()), vec![
             Text(s!(title, " ")),
-            Element(i, vec![], vec![Text(s!(name.clone(), if cross { " [cross]" } else { "" }))]),
+            Element(i, vec![], vec![Text(s!(name, if cross { " [cross]" } else { "" }))]),
         ]));
     }
-    res.push(Element(p, vec![], description.map(|s| Text(s)).into_iter().collect::<Vec<_>>()));
-    res.append(&mut tool_links(name.clone(), links, true));
+    res.push(Element(p, vec![], description.map(Text).into_iter().collect::<Vec<_>>()));
+    res.append(&mut tool_links(name, links, true));
     if let Some(notice) = notice {
         res.push(tool_notice(notice));
     }
@@ -523,7 +521,7 @@ fn tools_plain(tools: Map<Tool>, index: ToolIndex, cross: ToolCross) -> Vec<Node
         }
         for tool_name in cross_list {
             res.append(&mut tool_plain(tools.get(&tool_name).unwrap().clone(), true, true));
-            if let Some(cross_notice) = cross.get(&name).map(|m| m.get(&tool_name)).flatten() {
+            if let Some(cross_notice) = cross.get(&name).and_then(|m| m.get(&tool_name)) {
                 res.push(Text(cross_notice.clone()));
             }
         }
@@ -601,7 +599,7 @@ pub fn codegen(base_path: &str) -> CodegenResult {
         let mut fragments = tools_sides.into_iter().map(side).collect::<Vec<_>>();
         fragments.extend(tools_ext.clone().into_values().map(tool));
         fragments.push(major_fragment(major.clone(), s!("tiles")));
-        fragments.push(major_fragment(category(tools_category.clone()), s!("category")));
+        fragments.push(major_fragment(category(tools_category), s!("category")));
         assert_none!(res.insert(
             "<!--{{major}}-->".to_owned(),
             render_node(major_wrapper(major, page_type)),
