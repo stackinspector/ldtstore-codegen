@@ -124,21 +124,9 @@ fn read_commit<P: AsRef<Path>>(base_path: P) -> [u8; 7] {
     commit[0..7].try_into().unwrap()
 }
 
-fn build_static_inserts<P: AsRef<Path>>(base_path: P, config: Config, commit: &str) -> Inserts {
+fn build_static_inserts<P: AsRef<Path>>(base_path: P, config: Config) -> Inserts {
     let base_path = base_path.as_ref();
     let mut res = Inserts::new();
-    assert_none!(res.insert(
-        r#"<script src="/main.js"></script>"#.to_owned(),
-        cs!(r#"<script src="/main-"#, commit, r#".js"></script>"#),
-    ));
-    assert_none!(res.insert(
-        r#"<link rel="stylesheet" href="/style.css">"#.to_owned(),
-        cs!(r#"<link rel="stylesheet" href="/style-"#, commit, r#".css">"#),
-    ));
-    assert_none!(res.insert(
-        "<a n ".to_owned(),
-        r#"<a target="_blank" "#.to_owned(),
-    ));
     for entry in fs::read_dir(base_path.join("fragment")).unwrap() {
         let entry = entry.unwrap();
         if entry.metadata().unwrap().is_file() {
@@ -206,7 +194,7 @@ impl GlobalStates {
         let template = template_paths(config);
         let commit = read_commit(&base_path);
         let codegen_result = codegen(&base_path);
-        let static_inserts = build_static_inserts(&base_path, config, byte2str!(&commit));
+        let static_inserts = build_static_inserts(&base_path, config);
         GlobalStates { base_path, dest_path, template, commit, static_inserts, codegen_result }
     }
 
@@ -216,22 +204,30 @@ impl GlobalStates {
         let src_path = base_path.join(cs!(name, ".", ty.as_src()));
         let content = match ty {
             FileType::Html => {
-                let src = load!(src_path);
-                let static_templated = insert(src, static_inserts);
-                let dynamic_templated = insert(static_templated, match name {
+                let code = load!(src_path);
+                let code = insert(code, static_inserts);
+                let code = insert(code, match name {
                     "index" => &codegen_result.home,
                     "ldtools/index" => &codegen_result.tools,
                     "ldtools/plain" => &codegen_result.tools_plain,
                     _ => unreachable!(),
                 });
-                dynamic_templated
-            }
-            FileType::Css => {
-                minify_css(src_path)
-            }
-            FileType::Script => {
-                compile_script(src_path)
+                let code = code.replace(
+                    r#"<script src="/main.js"></script>"#,
+                    cs!(r#"<script src="/main-"#, byte2str!(commit), r#".js"></script>"#).as_str(),
+                );
+                let code = code.replace(
+                    r#"<link rel="stylesheet" href="/style.css">"#,
+                    cs!(r#"<link rel="stylesheet" href="/style-"#, byte2str!(commit), r#".css">"#).as_str(),
+                );
+                let code = code.replace(
+                    "<a n ",
+                    r#"<a target="_blank" "#,
+                );
+                code
             },
+            FileType::Css => minify_css(src_path),
+            FileType::Script => compile_script(src_path),
         };
 
         // macro_rules! replace_impl {
