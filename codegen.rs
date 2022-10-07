@@ -1,7 +1,6 @@
 use concat_string::concat_string as cs;
-use indexmap::IndexMap;
 use lighthtml::{*, prelude::*};
-use crate::{config::*, data::*, Map};
+use crate::{config::*, data::*, Map, Inserts};
 
 macro_rules! assert_none {
     ($x:expr) => {
@@ -546,28 +545,29 @@ fn tools_plain_toc(groups: Vec<ToolGroup>) -> Vec<Node> {
 
 #[derive(Clone, Debug)]
 pub struct CodegenResult {
-    pub home: IndexMap<String, String>,
-    pub tools: IndexMap<String, String>,
-    pub tools_plain: IndexMap<String, String>,
+    pub home: Inserts,
+    pub tools: Inserts,
+    pub tools_plain: Inserts,
 }
 
-pub fn codegen(base_path: &str) -> CodegenResult {
+pub fn codegen<P: AsRef<std::path::Path>>(base_path: P) -> CodegenResult {
+    let base_path = base_path.as_ref();
     macro_rules! load {
         ($s:expr) => {
-            serde_yaml::from_reader(std::fs::File::open(cs!(base_path, $s)).unwrap()).unwrap()
+            serde_yaml::from_reader(std::fs::File::open(base_path.join($s)).unwrap()).unwrap()
         };
     }
 
-    let public_sides: Vec<Side> = load!("/public.sides.yml");
-    let home_major: TileColumns = load!("/index.major.yml");
-    let home_sides: Vec<Side> = load!("/index.sides.yml");
-    let tools_major: TileGrids = load!("/ldtools/index.major.yml");
-    let tools_sides: Vec<Side> = load!("/ldtools/index.sides.yml");
-    let tools_tools: Vec<ToolGroup> = load!("/ldtools/index.tools.yml");
-    let tools_category: Category = load!("/ldtools/index.category.yml");
+    let public_sides: Vec<Side> = load!("public.sides.yml");
+    let home_major: TileColumns = load!("index.major.yml");
+    let home_sides: Vec<Side> = load!("index.sides.yml");
+    let tools_major: TileGrids = load!("ldtools/index.major.yml");
+    let tools_sides: Vec<Side> = load!("ldtools/index.sides.yml");
+    let tools_tools: Vec<ToolGroup> = load!("ldtools/index.tools.yml");
+    let tools_category: Category = load!("ldtools/index.category.yml");
 
     let home = {
-        let mut res = IndexMap::new();
+        let mut res = Inserts::new();
         let page_type = PageType::Home;
         let mut home_sides = home_sides;
         home_sides.append(&mut public_sides.clone());
@@ -590,7 +590,7 @@ pub fn codegen(base_path: &str) -> CodegenResult {
     let (tools_ext, tool_data) = tool_groups(tools_tools.clone(), tools_category.clone());
 
     let tools = {
-        let mut res = IndexMap::new();
+        let mut res = Inserts::new();
         let page_type = PageType::Tool;
         let mut tools_sides = tools_sides;
         tools_sides.append(&mut public_sides.clone());
@@ -616,7 +616,7 @@ pub fn codegen(base_path: &str) -> CodegenResult {
     };
 
     let tools_plain = {
-        let mut res = IndexMap::new();
+        let mut res = Inserts::new();
         assert_none!(res.insert(
             "<!--{{toc}}-->".to_owned(),
             render_nodes(tools_plain_toc(tools_tools)),

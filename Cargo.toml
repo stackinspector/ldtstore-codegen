@@ -24,3 +24,5 @@ indexmap = { version = "1.9", features = ["serde"] }
 lighthtml = { path = "../../Berylsoft/lighthtml" }
 
 [dev-dependencies]
+argh = "0.1"
+parcel_css = "1.0.0-alpha.32"
