@@ -1,5 +1,5 @@
 use std::{str::FromStr, fmt::Display, error::Error, fs::{self, OpenOptions}, path::{Path, PathBuf}, io::Write};
-use concat_string::concat_string as cs;
+use macros::concat_string as cs;
 use ldtstore_codegen::{codegen::{codegen, CodegenResult}, Inserts};
 
 macro_rules! assert_none {
