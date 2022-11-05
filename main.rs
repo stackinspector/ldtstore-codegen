@@ -104,10 +104,15 @@ const fn template_paths(config: Config) -> TemplatePaths<'static> {
     }
 }
 
-const COPYRIGHT: &str = "
+const COPYRIGHT_L: &str = "
   Copyright (c) 2021-2022 CarrotGeball and stackinspector. All rights reserved. MIT license.
-  Source code: https://github.com/stackinspector/ldtstore-homepage
-  Commit: ";
+  source: https://github.com/stackinspector/ldtstore-homepage
+  commit: ";
+
+const COPYRIGHT_R: &str = concat!("
+  codegen system (MPL license):
+  source: https://github.com/stackinspector/ldtstore-codegen
+  commit: ", env!("GIT_HASH"));
 
 fn read_commit<P: AsRef<Path>>(base_path: P) -> String {
     let base_path = base_path.as_ref();
@@ -249,8 +254,9 @@ impl GlobalStates {
             };
         }
         w!(comment_l);
-        w!(COPYRIGHT);
+        w!(COPYRIGHT_L);
         w!(commit);
+        w!(COPYRIGHT_R);
         w!("\n");
         w!(comment_r);
         w!("\n\n");

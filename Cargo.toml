@@ -5,6 +5,7 @@ edition = "2021"
 authors = ["stackinspector"]
 license = "MPL-2.0"
 repository = "https://github.com/stackinspector/ldtstore-codegen"
+build = "build.rs"
 
 [lib]
 name = "ldtstore_codegen"
