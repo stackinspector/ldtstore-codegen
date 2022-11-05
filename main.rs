@@ -14,12 +14,6 @@ macro_rules! load {
     };
 }
 
-macro_rules! byte2str {
-    ($b:expr) => {
-        std::str::from_utf8($b).unwrap()
-    };
-}
-
 #[allow(non_snake_case)]
 struct TemplatePaths<'a> {
     IMAGE: &'a str,
@@ -115,13 +109,13 @@ const COPYRIGHT: &str = "
   Source code: https://github.com/stackinspector/ldtstore-homepage
   Commit: ";
 
-fn read_commit<P: AsRef<Path>>(base_path: P) -> [u8; 7] {
+fn read_commit<P: AsRef<Path>>(base_path: P) -> String {
     let base_path = base_path.as_ref();
     let head = load!(base_path.join(".git/HEAD"));
     let head = head.split('\n').next().unwrap();
     let head = head.split("ref: ").nth(1).unwrap();
     let commit = fs::read(base_path.join(".git").join(head)).unwrap();
-    commit[0..7].try_into().unwrap()
+    String::from_utf8(commit[0..7].to_vec()).unwrap()
 }
 
 fn build_static_inserts<P: AsRef<Path>>(base_path: P, config: Config) -> Inserts {
@@ -154,37 +148,40 @@ fn insert(mut input: String, inserts: &Inserts) -> String {
     input
 }
 
-fn minify_css<P: AsRef<Path>>(full_path: P) -> String {
-    use parcel_css::stylesheet::{StyleSheet, ParserOptions, PrinterOptions};
-    let full_path = full_path.as_ref();
-    let code = load!(full_path);
-    let mut parsed = StyleSheet::parse(&code, ParserOptions { ..Default::default() }).unwrap();
-    parsed.minify(Default::default()).unwrap();
-    let res = parsed.to_css(PrinterOptions { minify: true, ..Default::default() }).unwrap();
-    res.code
-}
-
-fn compile_script<P: AsRef<Path>>(full_path: P) -> String {
+fn call_esbuilld_cli<P: AsRef<Path>>(full_path: P, args: &'static [&'static str]) -> String {
     use std::process::{Command, Stdio, Output};
-    let Output { status, mut stdout, .. } = Command::new("esbuild")
+    let Output { status, stdout, .. } = Command::new("esbuild")
         .arg(full_path.as_ref())
-        .arg("--minify-whitespace")
-        .arg("--minify-syntax")
-        .arg("--target=es6")
+        .args(args)
         .stdin(Stdio::null())
         .stderr(Stdio::inherit())
         .stdout(Stdio::piped())
         .output().unwrap();
     assert!(status.success());
-    assert_eq!(stdout.pop().unwrap(), b'\n');
-    cs!("(function(){", byte2str!(&stdout), "})()\n")
+    String::from_utf8(stdout).unwrap()
+}
+
+fn minify_css<P: AsRef<Path>>(full_path: P) -> String {
+    call_esbuilld_cli(full_path, &[
+        "--minify",
+    ])
+}
+
+fn compile_script<P: AsRef<Path>>(full_path: P) -> String {
+    let mut out = call_esbuilld_cli(full_path, &[
+        "--minify-whitespace",
+        "--minify-syntax",
+        "--target=es6",
+    ]);
+    assert_eq!(out.pop().unwrap(), '\n');
+    cs!("(function(){", &out, "})()\n")
 }
 
 struct GlobalStates {
     base_path: PathBuf,
     dest_path: PathBuf,
     template: TemplatePaths<'static>,
-    commit: [u8; 7],
+    commit: String,
     static_inserts: Inserts,
     codegen_result: CodegenResult,
 }
@@ -214,11 +211,11 @@ impl GlobalStates {
                 });
                 let code = code.replace(
                     r#"<script src="/main.js"></script>"#,
-                    cs!(r#"<script src="/main-"#, byte2str!(commit), r#".js"></script>"#).as_str(),
+                    cs!(r#"<script src="/main-"#, commit, r#".js"></script>"#).as_str(),
                 );
                 let code = code.replace(
                     r#"<link rel="stylesheet" href="/style.css">"#,
-                    cs!(r#"<link rel="stylesheet" href="/style-"#, byte2str!(commit), r#".css">"#).as_str(),
+                    cs!(r#"<link rel="stylesheet" href="/style-"#, commit, r#".css">"#).as_str(),
                 );
                 let code = code.replace(
                     "<a n ",
@@ -242,7 +239,7 @@ impl GlobalStates {
         let dest_path = dest_path.join(if matches!(ty, FileType::Html) {
             cs!(name, ".", ty.as_dest())
         } else {
-            cs!(name, "-", byte2str!(commit), ".", ty.as_dest())
+            cs!(name, "-", commit, ".", ty.as_dest())
         });
         let (comment_l, comment_r) = ty.comment();
         let mut file = OpenOptions::new().create_new(true).write(true).open(dest_path).unwrap();
@@ -251,14 +248,9 @@ impl GlobalStates {
                 file.write_all($s.as_bytes()).unwrap();
             };
         }
-        macro_rules! wb {
-            ($s:expr) => {
-                file.write_all($s).unwrap();
-            };
-        }
         w!(comment_l);
         w!(COPYRIGHT);
-        wb!(commit);
+        w!(commit);
         w!("\n");
         w!(comment_r);
         w!("\n\n");
