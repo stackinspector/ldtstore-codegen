@@ -411,9 +411,9 @@ fn tool_links(name: ByteString, ToolLinks { website, websites, downloads: tool_d
             });
         }
     }
-    if let Some(downloads) = tool_downloads {
-        for (link, title) in downloads {
-            links.push(ToolLink {
+    if let Some(tool_downloads) = tool_downloads {
+        for (link, title) in tool_downloads {
+            downloads.push(ToolLink {
                 title: ToolLinkTitle::Text(title),
                 link_type: ToolLinkType::R2,
                 link: s!(name, "-d-", link),
@@ -431,7 +431,7 @@ fn tool_links(name: ByteString, ToolLinks { website, websites, downloads: tool_d
     }
     if let Some(mirrors) = mirrors {
         for (link, title) in mirrors {
-            links.push(ToolLink {
+            downloads.push(ToolLink {
                 title: ToolLinkTitle::Text(title),
                 link_type: ToolLinkType::Mirror,
                 link: s!("/locked/", name, "-", link, ".zip"),
