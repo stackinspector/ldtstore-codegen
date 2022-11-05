@@ -173,13 +173,12 @@ fn minify_css<P: AsRef<Path>>(full_path: P) -> String {
 }
 
 fn compile_script<P: AsRef<Path>>(full_path: P) -> String {
-    let mut out = call_esbuilld_cli(full_path, &[
+    call_esbuilld_cli(full_path, &[
         "--minify-whitespace",
         "--minify-syntax",
+        "--format=iife",
         "--target=es6",
-    ]);
-    assert_eq!(out.pop().unwrap(), '\n');
-    cs!("(function(){", &out, "})()\n")
+    ])
 }
 
 struct GlobalStates {
